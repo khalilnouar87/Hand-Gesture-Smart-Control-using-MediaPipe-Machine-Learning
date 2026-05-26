@@ -18,6 +18,9 @@ Using MediaPipe hand tracking and a Random Forest classifier, the system can rec
 - 📸 Screenshot capture
 
 ---
+# ✨ Dataset
+https://www.kaggle.com/datasets/khalilnouar87/smarthandgesturedataset
+---
 
 # ✨ Features
 
