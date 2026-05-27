@@ -1,4 +1,7 @@
 # ✋ Hand Gesture Smart Control using MediaPipe & Machine Learning
+---
+Project coop: https://github.com/talebahmedabdelkrim-dev - @talebahmedabdelkrim-dev
+---
 
 🚀 A real-time AI hand gesture recognition system that allows users to control their computer using hand gestures detected through a webcam.
 
