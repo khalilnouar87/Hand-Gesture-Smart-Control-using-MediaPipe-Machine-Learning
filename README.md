@@ -2,6 +2,8 @@
 ---
 Project coop: https://github.com/talebahmedabdelkrim-dev - @talebahmedabdelkrim-dev
 ---
+![Preview](img.png)
+---
 
 🚀 A real-time AI hand gesture recognition system that allows users to control their computer using hand gestures detected through a webcam.
 
