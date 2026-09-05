@@ -1,11 +1,19 @@
 import streamlit as st
-import cv2
+import os
+import time
+
+# ── Handle OpenCV import gracefully ──────────────────────────────────────────
+try:
+    import cv2
+except Exception as e:
+    st.error(f"Failed to import OpenCV: {e}")
+    st.info("This usually means system libraries are missing. Make sure packages.txt is in your repo root.")
+    st.stop()
+
 import mediapipe as mp
 import numpy as np
 import pickle
 import av
-import os
-import time
 
 # ── Optional: pyautogui only works when running LOCALLY ─────────────────────
 try:
