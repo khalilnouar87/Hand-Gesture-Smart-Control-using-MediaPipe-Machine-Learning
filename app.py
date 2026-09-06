@@ -110,11 +110,7 @@ CONTROL_MAP = {
 }
 
 RTC_CONFIGURATION = RTCConfiguration({
-    "iceServers": [
-        {"urls": ["stun:stun.l.google.com:19302"]},
-        {"urls": ["stun:stun1.l.google.com:19302"]},
-        {"urls": ["stun:stun2.l.google.com:19302"]},
-    ]
+    "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
 })
 
 # ─────────────────────────────────────────────
@@ -128,7 +124,6 @@ def load_model():
         return d["model"], True
     except Exception:
         return None, False
-
 
 @st.cache_resource
 def get_mediapipe():
@@ -155,13 +150,11 @@ def normalize_landmarks(hand_landmarks):
         data_aux.append(lm.y - min_y)
     return np.asarray(data_aux)
 
-
 def hex_to_bgr(h):
     r = int(h[1:3], 16)
     g = int(h[3:5], 16)
     b = int(h[5:7], 16)
     return (b, g, r)
-
 
 def draw_overlay(frame, hand_lm, label, color_hex,
                  H, W, mp_drawing, mp_hands, mp_styles):
@@ -193,22 +186,26 @@ def draw_overlay(frame, hand_lm, label, color_hex,
 class GestureProcessor(VideoProcessorBase):
 
     def __init__(self):
-        self.model           = None
-        self.mp_hands        = None
-        self.mp_drawing      = None
-        self.mp_styles       = None
-        self.hands           = None
+        self.model      = None
+        self.mp_hands   = None
+        self.mp_drawing = None
+        self.mp_styles  = None
+        self.hands      = None
+
+        # shared result
         self.current_gesture = "None"
         self.current_icon    = "🖐️"
         self.current_color   = "#7c4dff"
         self.confidence      = 0.0
         self.frame_count     = 0
+
         self._load()
 
     def _load(self):
         model, loaded = load_model()
         if loaded:
             self.model = model
+
         mp_h, mp_d, mp_s, hands = get_mediapipe()
         self.mp_hands   = mp_h
         self.mp_drawing = mp_d
@@ -216,11 +213,13 @@ class GestureProcessor(VideoProcessorBase):
         self.hands      = hands
 
     def recv(self, frame: av.VideoFrame) -> av.VideoFrame:
-        img      = frame.to_ndarray(format="bgr24")
-        img      = cv2.flip(img, 1)
-        H, W, _  = img.shape
-        img_rgb  = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        results  = self.hands.process(img_rgb)
+        img = frame.to_ndarray(format="bgr24")
+        img = cv2.flip(img, 1)
+        H, W, _ = img.shape
+
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        results = self.hands.process(img_rgb)
+
         self.frame_count += 1
 
         if results.multi_hand_landmarks and self.model is not None:
@@ -232,13 +231,15 @@ class GestureProcessor(VideoProcessorBase):
                 conf      = float(np.max(proba)) * 100
 
                 name, icon, color = CONTROL_MAP.get(
-                    class_id, ("Unknown", "❓", "#ffffff"))
+                    class_id, ("Unknown", "❓", "#fff"))
 
+                # Update shared state
                 self.current_gesture = name
                 self.current_icon    = icon
                 self.current_color   = color
                 self.confidence      = conf
 
+                # Draw on frame
                 img = draw_overlay(
                     img, hand_lm, f"{name} {conf:.0f}%",
                     color, H, W,
@@ -247,10 +248,13 @@ class GestureProcessor(VideoProcessorBase):
                     self.mp_styles
                 )
 
-            cv2.putText(img, f"Frame: {self.frame_count}",
+            # Frame info
+            cv2.putText(img,
+                        f"Frame: {self.frame_count}",
                         (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
                         0.6, (200, 200, 200), 2)
-            cv2.putText(img, f"Conf: {self.confidence:.1f}%",
+            cv2.putText(img,
+                        f"Conf: {self.confidence:.1f}%",
                         (10, 55), cv2.FONT_HERSHEY_SIMPLEX,
                         0.6, (100, 220, 255), 2)
         else:
@@ -258,7 +262,9 @@ class GestureProcessor(VideoProcessorBase):
             self.current_icon    = "🖐️"
             self.current_color   = "#7c4dff"
             self.confidence      = 0.0
-            cv2.putText(img, "No Hand Detected",
+
+            cv2.putText(img,
+                        "No Hand Detected",
                         (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
                         0.8, (100, 100, 100), 2)
 
@@ -322,9 +328,10 @@ st.markdown(
     unsafe_allow_html=True)
 st.markdown(
     '<div class="subtitle-text">'
-    'Live Webcam · MediaPipe + Random Forest'
+    'Live webcam · MediaPipe + Random Forest'
     '</div>',
     unsafe_allow_html=True)
+
 st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
@@ -335,27 +342,16 @@ col_cam, col_info = st.columns([3, 1])
 with col_cam:
     st.markdown("### 📹 Live Camera")
 
-    # Camera selector
-    cam_options  = {"Front Camera": "user", "Back Camera": "environment"}
-    selected_cam = st.selectbox("Select Camera", list(cam_options.keys()))
-    facing       = cam_options[selected_cam]
-
     if not st.session_state.model_loaded:
         st.error("⚠️ Upload model.p in the sidebar first!")
-        ctx = None
     else:
         ctx = webrtc_streamer(
-            key=f"gesture-{facing}",
+            key="gesture",
             video_processor_factory=GestureProcessor,
             rtc_configuration=RTC_CONFIGURATION,
             media_stream_constraints={
-                "video": {
-                    "facingMode": facing,
-                    "width":      {"ideal": 640},
-                    "height":     {"ideal": 480},
-                    "frameRate":  {"ideal": 15},
-                },
-                "audio": False,
+                "video": True,
+                "audio": False
             },
             async_processing=True,
         )
@@ -363,103 +359,81 @@ with col_cam:
 with col_info:
     st.markdown("### 🎯 Live Result")
     result_ph = st.empty()
-
     st.markdown("### 📊 Confidence")
-    conf_ph = st.empty()
-
+    conf_ph   = st.empty()
     st.markdown("### 🕓 History")
-    hist_ph = st.empty()
+    hist_ph   = st.empty()
 
 # ─────────────────────────────────────────────
-#  Default empty panels
+#  Live Result Update Loop
 # ─────────────────────────────────────────────
-def render_result(gesture, icon, color, conf):
-    result_ph.markdown(
-        f'<div class="result-box" style="border-color:{color};">'
-        f'<div class="result-icon">{icon}</div>'
-        f'<div class="result-name" style="color:{color};">{gesture}</div>'
-        f'<div class="result-conf">{conf:.1f}% confidence</div>'
-        f'</div>',
-        unsafe_allow_html=True
-    )
-
-def render_confidence(gesture, icon, color, conf):
-    conf_ph.markdown(
-        f'<div class="card">'
-        f'<div style="display:flex;justify-content:space-between;'
-        f'font-size:14px;color:#e0e0e0;">'
-        f'<span>{icon} {gesture}</span>'
-        f'<span style="color:{color};">{conf:.1f}%</span></div>'
-        f'<div style="background:#0f1117;border-radius:6px;'
-        f'height:10px;margin-top:8px;">'
-        f'<div style="width:{min(conf,100)}%;background:{color};'
-        f'height:10px;border-radius:6px;"></div>'
-        f'</div></div>',
-        unsafe_allow_html=True
-    )
-
-def render_history():
-    if not st.session_state.history:
-        hist_ph.markdown(
-            '<div class="card" style="color:#546e7a;'
-            'text-align:center;font-size:13px;">No gestures yet…</div>',
-            unsafe_allow_html=True
-        )
-        return
-    hist_html = '<div class="card" style="max-height:300px;overflow-y:auto;">'
-    for entry in reversed(st.session_state.history):
-        c = "#7c4dff"
-        for _, (n, _, cl) in CONTROL_MAP.items():
-            if n == entry["name"]:
-                c = cl
-                break
-        hist_html += (
-            f'<div style="display:flex;justify-content:space-between;'
-            f'padding:6px 0;border-bottom:1px solid #3a3f5c;">'
-            f'<span>{entry["icon"]} '
-            f'<span style="color:{c};">{entry["name"]}</span></span>'
-            f'<span style="color:#546e7a;font-size:12px;">'
-            f'{entry["conf"]:.0f}% · {entry["time"]}</span>'
-            f'</div>'
-        )
-    hist_html += '</div>'
-    hist_ph.markdown(hist_html, unsafe_allow_html=True)
-
-# render defaults
-render_result("None", "🖐️", "#7c4dff", 0.0)
-render_confidence("None", "🖐️", "#7c4dff", 0.0)
-render_history()
-
-# ─────────────────────────────────────────────
-#  Live Update Loop
-# ─────────────────────────────────────────────
-if ctx is not None and ctx.video_processor:
-    last_logged = ""
-    while True:
-        try:
+if st.session_state.model_loaded:
+    if "ctx" in dir() and ctx.video_processor:
+        while True:
             processor = ctx.video_processor
-            gesture   = processor.current_gesture
-            icon      = processor.current_icon
-            color     = processor.current_color
-            conf      = processor.confidence
 
-            render_result(gesture, icon, color, conf)
-            render_confidence(gesture, icon, color, conf)
+            gesture = processor.current_gesture
+            icon    = processor.current_icon
+            color   = processor.current_color
+            conf    = processor.confidence
 
-            # Save unique gesture to history
-            if gesture != "None" and gesture != last_logged:
-                st.session_state.history.append({
-                    "name": gesture,
-                    "icon": icon,
-                    "conf": conf,
-                    "time": time.strftime("%H:%M:%S")
-                })
-                if len(st.session_state.history) > 10:
-                    st.session_state.history.pop(0)
-                last_logged = gesture
+            # Update result box
+            result_ph.markdown(
+                f'<div class="result-box" style="border-color:{color};">'
+                f'<div class="result-icon">{icon}</div>'
+                f'<div class="result-name" style="color:{color};">{gesture}</div>'
+                f'<div class="result-conf">{conf:.1f}% confidence</div>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
 
-            render_history()
+            # Confidence bar
+            conf_ph.markdown(
+                f'<div class="card">'
+                f'<div style="display:flex;justify-content:space-between;'
+                f'font-size:14px;color:#e0e0e0;">'
+                f'<span>{icon} {gesture}</span>'
+                f'<span style="color:{color};">{conf:.1f}%</span></div>'
+                f'<div style="background:#0f1117;border-radius:6px;'
+                f'height:10px;margin-top:8px;">'
+                f'<div style="width:{conf}%;background:{color};'
+                f'height:10px;border-radius:6px;'
+                f'transition:width 0.3s;"></div></div>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+
+            # Save to history
+            if gesture != "None":
+                if (not st.session_state.history or
+                        st.session_state.history[-1]["name"] != gesture):
+                    st.session_state.history.append({
+                        "name": gesture,
+                        "icon": icon,
+                        "conf": conf,
+                        "time": time.strftime("%H:%M:%S")
+                    })
+                    if len(st.session_state.history) > 10:
+                        st.session_state.history.pop(0)
+
+            # History list
+            hist_html = '<div class="card" style="max-height:300px;overflow-y:auto;">'
+            for entry in reversed(st.session_state.history):
+                c = "#7c4dff"
+                for _, (n, _, cl) in CONTROL_MAP.items():
+                    if n == entry["name"]:
+                        c = cl
+                        break
+                hist_html += (
+                    f'<div style="display:flex;justify-content:space-between;'
+                    f'padding:6px 0;border-bottom:1px solid #3a3f5c;">'
+                    f'<span>{entry["icon"]} '
+                    f'<span style="color:{c};">{entry["name"]}</span></span>'
+                    f'<span style="color:#546e7a;font-size:12px;">'
+                    f'{entry["conf"]:.0f}% · {entry["time"]}</span>'
+                    f'</div>'
+                )
+            hist_html += '</div>'
+            hist_ph.markdown(hist_html, unsafe_allow_html=True)
+
             time.sleep(0.1)
-
-        except Exception:
-            break
