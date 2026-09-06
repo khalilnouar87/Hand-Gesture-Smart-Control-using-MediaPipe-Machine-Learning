@@ -1,9 +1,7 @@
-opencv-python==4.9.0.80
+opencv-python-headless
 mediapipe==0.10.14
-scikit-learn==1.4.2
-numpy==1.26.4
-pyautogui==0.9.54
-streamlit==1.35.0
-pillow==10.3.0
-matplotlib==3.9.0
-pickle5==0.0.11
+scikit-learn
+numpy
+streamlit
+pillow
+matplotlib
