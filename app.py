@@ -402,7 +402,35 @@ if st.session_state.model_loaded:
                 f'</div>',
                 unsafe_allow_html=True
             )
+with col_cam:
+    st.markdown("### 📹 Live Camera")
 
+    # Camera selector
+    cam_options = {
+        "Front Camera":  "user",
+        "Back Camera":   "environment",
+    }
+    selected_cam = st.selectbox(
+        "Select Camera",
+        list(cam_options.keys())
+    )
+    facing = cam_options[selected_cam]
+
+    ctx = webrtc_streamer(
+        key=f"gesture-{facing}",
+        video_processor_factory=GestureProcessor,
+        rtc_configuration=RTC_CONFIGURATION,
+        media_stream_constraints={
+            "video": {
+                "facingMode": facing,
+                "width":      {"ideal": 640},
+                "height":     {"ideal": 480},
+                "frameRate":  {"ideal": 15},
+            },
+            "audio": False
+        },
+        async_processing=True,
+    )
             # Save to history
             if gesture != "None":
                 if (not st.session_state.history or
