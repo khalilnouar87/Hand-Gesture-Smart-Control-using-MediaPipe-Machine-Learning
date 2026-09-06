@@ -11,7 +11,7 @@ import streamlit as st
 # ------------------------------
 # 2. Check for OpenCV availability
 # ------------------------------
-pip install opencv-python-headless
+
 try:
     import cv2
 except ImportError:
