@@ -1,11 +1,11 @@
-# app.py - Streamlit Cloud Compatible (No Camera, No pyautogui)
 import streamlit as st
 import cv2
 import mediapipe as mp
 import numpy as np
 import pickle
 import time
-from PIL import Image
+import av
+from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
 
 # ─────────────────────────────────────────────
 #  Page Config
@@ -87,22 +87,9 @@ st.markdown("""
         border: 2px solid #7c4dff;
         margin: 10px 0;
     }
-    .result-icon  { font-size: 80px; margin-bottom: 10px; }
-    .result-name  { font-size: 32px; font-weight: bold; color: #7c4dff; }
-    .result-conf  { font-size: 16px; color: #90a4ae; margin-top: 8px; }
-    .prob-row {
-        display: flex;
-        justify-content: space-between;
-        font-size: 13px;
-        color: #e0e0e0;
-        margin: 5px 0;
-    }
-    .prob-bar-bg {
-        background: #0f1117;
-        border-radius: 4px;
-        height: 6px;
-        margin-top: 3px;
-    }
+    .result-icon { font-size: 80px; margin-bottom: 10px; }
+    .result-name { font-size: 32px; font-weight: bold; color: #7c4dff; }
+    .result-conf { font-size: 16px; color: #90a4ae; margin-top: 8px; }
     #MainMenu { visibility: hidden; }
     footer     { visibility: hidden; }
 </style>
@@ -122,21 +109,12 @@ CONTROL_MAP = {
     7: ("Screenshot",  "📸", "#e91e63"),
 }
 
-# ─────────────────────────────────────────────
-#  Session State
-# ─────────────────────────────────────────────
-defaults = {
-    "model":          None,
-    "model_loaded":   False,
-    "history":        [],
-    "total_tested":   0,
-}
-for k, v in defaults.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
+RTC_CONFIGURATION = RTCConfiguration({
+    "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
+})
 
 # ─────────────────────────────────────────────
-#  Load Model
+#  Load Model & MediaPipe
 # ─────────────────────────────────────────────
 @st.cache_resource
 def load_model():
@@ -153,8 +131,9 @@ def get_mediapipe():
     mp_drawing = mp.solutions.drawing_utils
     mp_styles  = mp.solutions.drawing_styles
     hands = mp_hands.Hands(
-        static_image_mode=True,
-        min_detection_confidence=0.3
+        static_image_mode=False,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5,
     )
     return mp_hands, mp_drawing, mp_styles, hands
 
@@ -171,18 +150,16 @@ def normalize_landmarks(hand_landmarks):
         data_aux.append(lm.y - min_y)
     return np.asarray(data_aux)
 
-
 def hex_to_bgr(h):
     r = int(h[1:3], 16)
     g = int(h[3:5], 16)
     b = int(h[5:7], 16)
     return (b, g, r)
 
-
-def draw_overlay(frame_rgb, hand_lm, label, color_hex,
+def draw_overlay(frame, hand_lm, label, color_hex,
                  H, W, mp_drawing, mp_hands, mp_styles):
     mp_drawing.draw_landmarks(
-        frame_rgb, hand_lm, mp_hands.HAND_CONNECTIONS,
+        frame, hand_lm, mp_hands.HAND_CONNECTIONS,
         mp_styles.get_default_hand_landmarks_style(),
         mp_styles.get_default_hand_connections_style()
     )
@@ -192,24 +169,117 @@ def draw_overlay(frame_rgb, hand_lm, label, color_hex,
     y1 = max(int(min(ys) * H) - 10, 0)
     x2 = min(int(max(xs) * W) + 10, W)
     y2 = min(int(max(ys) * H) + 10, H)
-
     bgr = hex_to_bgr(color_hex)
-    cv2.rectangle(frame_rgb, (x1, y1), (x2, y2), bgr, 2)
+    cv2.rectangle(frame, (x1, y1), (x2, y2), bgr, 2)
+    (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)
+    cv2.rectangle(frame,
+                  (x1, max(y1 - th - 14, 0)),
+                  (x1 + tw + 10, y1), bgr, -1)
+    cv2.putText(frame, label, (x1 + 5, max(y1 - 6, 0)),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8,
+                (255, 255, 255), 2, cv2.LINE_AA)
+    return frame
 
-    (tw, th), _ = cv2.getTextSize(
-        label, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)
-    cv2.rectangle(
-        frame_rgb,
-        (x1, max(y1 - th - 14, 0)),
-        (x1 + tw + 10, y1),
-        bgr, -1
-    )
-    cv2.putText(
-        frame_rgb, label, (x1 + 5, max(y1 - 6, 0)),
-        cv2.FONT_HERSHEY_SIMPLEX, 0.8,
-        (255, 255, 255), 2, cv2.LINE_AA
-    )
-    return frame_rgb
+# ─────────────────────────────────────────────
+#  Video Processor
+# ─────────────────────────────────────────────
+class GestureProcessor(VideoProcessorBase):
+
+    def __init__(self):
+        self.model      = None
+        self.mp_hands   = None
+        self.mp_drawing = None
+        self.mp_styles  = None
+        self.hands      = None
+
+        # shared result
+        self.current_gesture = "None"
+        self.current_icon    = "🖐️"
+        self.current_color   = "#7c4dff"
+        self.confidence      = 0.0
+        self.frame_count     = 0
+
+        self._load()
+
+    def _load(self):
+        model, loaded = load_model()
+        if loaded:
+            self.model = model
+
+        mp_h, mp_d, mp_s, hands = get_mediapipe()
+        self.mp_hands   = mp_h
+        self.mp_drawing = mp_d
+        self.mp_styles  = mp_s
+        self.hands      = hands
+
+    def recv(self, frame: av.VideoFrame) -> av.VideoFrame:
+        img = frame.to_ndarray(format="bgr24")
+        img = cv2.flip(img, 1)
+        H, W, _ = img.shape
+
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        results = self.hands.process(img_rgb)
+
+        self.frame_count += 1
+
+        if results.multi_hand_landmarks and self.model is not None:
+            for hand_lm in results.multi_hand_landmarks:
+                norm_data = normalize_landmarks(hand_lm)
+                pred      = self.model.predict([norm_data])[0]
+                proba     = self.model.predict_proba([norm_data])[0]
+                class_id  = int(pred)
+                conf      = float(np.max(proba)) * 100
+
+                name, icon, color = CONTROL_MAP.get(
+                    class_id, ("Unknown", "❓", "#fff"))
+
+                # Update shared state
+                self.current_gesture = name
+                self.current_icon    = icon
+                self.current_color   = color
+                self.confidence      = conf
+
+                # Draw on frame
+                img = draw_overlay(
+                    img, hand_lm, f"{name} {conf:.0f}%",
+                    color, H, W,
+                    self.mp_drawing,
+                    self.mp_hands,
+                    self.mp_styles
+                )
+
+            # Frame info
+            cv2.putText(img,
+                        f"Frame: {self.frame_count}",
+                        (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.6, (200, 200, 200), 2)
+            cv2.putText(img,
+                        f"Conf: {self.confidence:.1f}%",
+                        (10, 55), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.6, (100, 220, 255), 2)
+        else:
+            self.current_gesture = "None"
+            self.current_icon    = "🖐️"
+            self.current_color   = "#7c4dff"
+            self.confidence      = 0.0
+
+            cv2.putText(img,
+                        "No Hand Detected",
+                        (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.8, (100, 100, 100), 2)
+
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
+
+# ─────────────────────────────────────────────
+#  Session State
+# ─────────────────────────────────────────────
+defaults = {
+    "model_loaded": False,
+    "history":      [],
+}
+for k, v in defaults.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
 
 # ─────────────────────────────────────────────
 #  SIDEBAR
@@ -218,35 +288,22 @@ with st.sidebar:
     st.markdown("## ⚙️ Settings")
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 
-    # Model loader
     st.markdown("### 📦 Model")
     model, loaded = load_model()
     if loaded:
-        st.session_state.model        = model
         st.session_state.model_loaded = True
         st.success("✅ Model loaded!")
     else:
-        st.warning("⚠️ model.p not found in repo")
-        uploaded_model = st.file_uploader(
-            "Upload model.p", type=["p"])
+        st.warning("⚠️ model.p not found")
+        uploaded_model = st.file_uploader("Upload model.p", type=["p"])
         if uploaded_model:
             with open("model.p", "wb") as f:
                 f.write(uploaded_model.read())
-            st.success("✅ Saved! Click Rerun.")
+            st.success("✅ Uploaded! Rerunning...")
             st.rerun()
 
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 
-    # Info
-    st.info(
-        "🌐 **Streamlit Cloud Mode**\n\n"
-        "Upload a hand photo to detect the gesture.\n\n"
-        "Mouse & keyboard control requires running **locally**."
-    )
-
-    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-
-    # Gesture Map
     st.markdown("### 🗂️ Gesture Map")
     for cid, (name, icon, color) in CONTROL_MAP.items():
         st.markdown(
@@ -259,10 +316,8 @@ with st.sidebar:
 
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 
-    # Clear history
     if st.button("🗑️ Clear History", use_container_width=True):
-        st.session_state.history     = []
-        st.session_state.total_tested = 0
+        st.session_state.history = []
         st.rerun()
 
 # ─────────────────────────────────────────────
@@ -273,211 +328,112 @@ st.markdown(
     unsafe_allow_html=True)
 st.markdown(
     '<div class="subtitle-text">'
-    'Upload a hand image · MediaPipe + Random Forest'
+    'Live webcam · MediaPipe + Random Forest'
     '</div>',
-    unsafe_allow_html=True)
-
-# ─────────────────────────────────────────────
-#  METRICS
-# ─────────────────────────────────────────────
-c1, c2, c3, c4 = st.columns(4)
-c1.markdown(
-    f'<div class="metric-box">'
-    f'<div class="metric-value">{st.session_state.total_tested}</div>'
-    f'<div class="metric-label">Images Tested</div></div>',
-    unsafe_allow_html=True)
-c2.markdown(
-    f'<div class="metric-box">'
-    f'<div class="metric-value">{len(st.session_state.history)}</div>'
-    f'<div class="metric-label">Detections</div></div>',
-    unsafe_allow_html=True)
-
-last_gesture = st.session_state.history[-1] if st.session_state.history else None
-c3.markdown(
-    f'<div class="metric-box">'
-    f'<div class="metric-value" style="font-size:20px;">'
-    f'{last_gesture["icon"] + " " + last_gesture["name"] if last_gesture else "—"}'
-    f'</div>'
-    f'<div class="metric-label">Last Gesture</div></div>',
-    unsafe_allow_html=True)
-c4.markdown(
-    f'<div class="metric-box">'
-    f'<div class="metric-value">'
-    f'{f"{last_gesture[chr(99)+chr(111)+chr(110)+chr(102)]:.1f}%" if last_gesture else "—"}'
-    f'</div>'
-    f'<div class="metric-label">Last Confidence</div></div>',
     unsafe_allow_html=True)
 
 st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-#  UPLOAD & PREDICT
+#  MAIN LAYOUT
 # ─────────────────────────────────────────────
-st.markdown("### 📤 Upload Hand Image")
+col_cam, col_info = st.columns([3, 1])
 
-uploaded_imgs = st.file_uploader(
-    "Choose one or more hand images",
-    type=["jpg", "jpeg", "png"],
-    accept_multiple_files=True
-)
+with col_cam:
+    st.markdown("### 📹 Live Camera")
 
-if uploaded_imgs and st.session_state.model_loaded:
-    mp_hands_mod, mp_drawing_mod, mp_styles_mod, hands_det = get_mediapipe()
-    model_clf = st.session_state.model
+    if not st.session_state.model_loaded:
+        st.error("⚠️ Upload model.p in the sidebar first!")
+    else:
+        ctx = webrtc_streamer(
+            key="gesture",
+            video_processor_factory=GestureProcessor,
+            rtc_configuration=RTC_CONFIGURATION,
+            media_stream_constraints={
+                "video": True,
+                "audio": False
+            },
+            async_processing=True,
+        )
 
-    for uploaded_img in uploaded_imgs:
-        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-
-        file_bytes = np.asarray(
-            bytearray(uploaded_img.read()), dtype=np.uint8)
-        img_bgr = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-        H, W, _ = img_rgb.shape
-
-        st.session_state.total_tested += 1
-
-        results = hands_det.process(img_rgb)
-
-        col_img, col_result = st.columns([3, 2])
-
-        if results.multi_hand_landmarks:
-            all_preds = []
-
-            for hand_lm in results.multi_hand_landmarks:
-                norm_data = normalize_landmarks(hand_lm)
-                pred      = model_clf.predict([norm_data])[0]
-                proba     = model_clf.predict_proba([norm_data])[0]
-                class_id  = int(pred)
-                conf      = float(np.max(proba)) * 100
-
-                name, icon, color = CONTROL_MAP.get(
-                    class_id, ("Unknown", "❓", "#fff"))
-
-                img_rgb = draw_overlay(
-                    img_rgb, hand_lm, name, color,
-                    H, W, mp_drawing_mod,
-                    mp_hands_mod, mp_styles_mod
-                )
-                all_preds.append((class_id, name, icon, color, conf, proba))
-
-                # Save to history
-                st.session_state.history.append({
-                    "name": name,
-                    "icon": icon,
-                    "conf": conf,
-                    "time": time.strftime("%H:%M:%S")
-                })
-
-            with col_img:
-                st.image(
-                    img_rgb,
-                    caption=f"📁 {uploaded_img.name}",
-                    use_container_width=True
-                )
-
-            with col_result:
-                for class_id, name, icon, color, conf, proba in all_preds:
-                    # Result box
-                    st.markdown(
-                        f'<div class="result-box" style="border-color:{color};">'
-                        f'<div class="result-icon">{icon}</div>'
-                        f'<div class="result-name" style="color:{color};">{name}</div>'
-                        f'<div class="result-conf">Confidence: {conf:.1f}%</div>'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
-
-                    # Metrics row
-                    m1, m2, m3 = st.columns(3)
-                    m1.metric("Class ID",    class_id)
-                    m2.metric("Confidence",  f"{conf:.1f}%")
-                    m3.metric("Hands Found", len(results.multi_hand_landmarks))
-
-                    # Probability bars for all classes
-                    st.markdown("#### 📊 All Class Probabilities")
-                    classes = model_clf.classes_
-                    for i, cls in enumerate(classes):
-                        cid      = int(cls)
-                        cname, cicon, ccolor = CONTROL_MAP.get(
-                            cid, ("Unknown", "❓", "#fff"))
-                        pct = proba[i] * 100
-                        st.markdown(
-                            f'<div class="prob-row">'
-                            f'<span>{cicon} {cname}</span>'
-                            f'<span style="color:{ccolor};">{pct:.1f}%</span>'
-                            f'</div>'
-                            f'<div class="prob-bar-bg">'
-                            f'<div style="width:{pct}%;background:{ccolor};'
-                            f'height:6px;border-radius:4px;"></div></div>',
-                            unsafe_allow_html=True
-                        )
-
-        else:
-            with col_img:
-                st.image(
-                    img_rgb,
-                    caption=f"📁 {uploaded_img.name}",
-                    use_container_width=True
-                )
-            with col_result:
-                st.markdown(
-                    '<div class="result-box" style="border-color:#f44336;">'
-                    '<div class="result-icon">❌</div>'
-                    '<div class="result-name" style="color:#f44336;">No Hand Detected</div>'
-                    '<div class="result-conf">Try a clearer image with good lighting</div>'
-                    '</div>',
-                    unsafe_allow_html=True
-                )
-                st.markdown("#### 💡 Tips")
-                st.markdown("""
-                - ✅ Make sure your **hand is clearly visible**
-                - ✅ Use **good lighting**
-                - ✅ Keep hand **centered** in frame
-                - ✅ Avoid **cluttered backgrounds**
-                - ✅ Try a **closer** shot
-                """)
-
-elif uploaded_imgs and not st.session_state.model_loaded:
-    st.error("⚠️ Please upload model.p in the sidebar first!")
-
-else:
-    # Empty state
-    st.markdown("""
-        <div class="card" style="text-align:center; padding: 60px 20px;">
-            <div style="font-size:80px;">🖐️</div>
-            <div style="font-size:24px;font-weight:bold;
-                        color:#7c4dff;margin-top:16px;">
-                Upload a Hand Image to Start
-            </div>
-            <div style="color:#546e7a;margin-top:12px;font-size:15px;">
-                Supports JPG, JPEG, PNG · Multiple images supported
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+with col_info:
+    st.markdown("### 🎯 Live Result")
+    result_ph = st.empty()
+    st.markdown("### 📊 Confidence")
+    conf_ph   = st.empty()
+    st.markdown("### 🕓 History")
+    hist_ph   = st.empty()
 
 # ─────────────────────────────────────────────
-#  HISTORY
+#  Live Result Update Loop
 # ─────────────────────────────────────────────
-if st.session_state.history:
-    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-    st.markdown("### 🕓 Detection History")
+if st.session_state.model_loaded:
+    if "ctx" in dir() and ctx.video_processor:
+        while True:
+            processor = ctx.video_processor
 
-    cols = st.columns(4)
-    for i, entry in enumerate(reversed(st.session_state.history[-12:])):
-        with cols[i % 4]:
-            name, icon = entry["name"], entry["icon"]
-            conf       = entry["conf"]
-            ts         = entry["time"]
-            color      = "#7c4dff"
-            for _, (n, _, c) in CONTROL_MAP.items():
-                if n == name:
-                    color = c
-                    break
-            st.markdown(
-                f'<div class="card" style="text-align:center;padding:14px;">'
-                f'<div style="font-size:36px;">{icon}</div>'
-                f'<div style="font-weight:bold;color:{color};font-size:14px;">{name}</div>'
-                f'<div style="color:#90a4ae;font-size:12px;">{conf:.1f}% · {ts}</div>'
+            gesture = processor.current_gesture
+            icon    = processor.current_icon
+            color   = processor.current_color
+            conf    = processor.confidence
+
+            # Update result box
+            result_ph.markdown(
+                f'<div class="result-box" style="border-color:{color};">'
+                f'<div class="result-icon">{icon}</div>'
+                f'<div class="result-name" style="color:{color};">{gesture}</div>'
+                f'<div class="result-conf">{conf:.1f}% confidence</div>'
                 f'</div>',
                 unsafe_allow_html=True
             )
+
+            # Confidence bar
+            conf_ph.markdown(
+                f'<div class="card">'
+                f'<div style="display:flex;justify-content:space-between;'
+                f'font-size:14px;color:#e0e0e0;">'
+                f'<span>{icon} {gesture}</span>'
+                f'<span style="color:{color};">{conf:.1f}%</span></div>'
+                f'<div style="background:#0f1117;border-radius:6px;'
+                f'height:10px;margin-top:8px;">'
+                f'<div style="width:{conf}%;background:{color};'
+                f'height:10px;border-radius:6px;'
+                f'transition:width 0.3s;"></div></div>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+
+            # Save to history
+            if gesture != "None":
+                if (not st.session_state.history or
+                        st.session_state.history[-1]["name"] != gesture):
+                    st.session_state.history.append({
+                        "name": gesture,
+                        "icon": icon,
+                        "conf": conf,
+                        "time": time.strftime("%H:%M:%S")
+                    })
+                    if len(st.session_state.history) > 10:
+                        st.session_state.history.pop(0)
+
+            # History list
+            hist_html = '<div class="card" style="max-height:300px;overflow-y:auto;">'
+            for entry in reversed(st.session_state.history):
+                c = "#7c4dff"
+                for _, (n, _, cl) in CONTROL_MAP.items():
+                    if n == entry["name"]:
+                        c = cl
+                        break
+                hist_html += (
+                    f'<div style="display:flex;justify-content:space-between;'
+                    f'padding:6px 0;border-bottom:1px solid #3a3f5c;">'
+                    f'<span>{entry["icon"]} '
+                    f'<span style="color:{c};">{entry["name"]}</span></span>'
+                    f'<span style="color:#546e7a;font-size:12px;">'
+                    f'{entry["conf"]:.0f}% · {entry["time"]}</span>'
+                    f'</div>'
+                )
+            hist_html += '</div>'
+            hist_ph.markdown(hist_html, unsafe_allow_html=True)
+
+            time.sleep(0.1)
