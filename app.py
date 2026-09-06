@@ -33,286 +33,230 @@ st.set_page_config(
 # CUSTOM CSS
 # ============================================================
 
-st.markdown(
-    """
-    <style>
+st.markdown("""
+<style>
 
-    /* ---------- GLOBAL ---------- */
+.stApp {
+    background:
+        radial-gradient(
+            circle at 15% 10%,
+            rgba(124, 77, 255, 0.12),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 85% 20%,
+            rgba(0, 188, 212, 0.10),
+            transparent 30%
+        ),
+        #080a10;
+    color: #f5f7fa;
+}
 
-    .stApp {
-        background:
-            radial-gradient(
-                circle at 15% 10%,
-                rgba(124, 77, 255, 0.12),
-                transparent 30%
-            ),
-            radial-gradient(
-                circle at 85% 20%,
-                rgba(0, 188, 212, 0.10),
-                transparent 30%
-            ),
-            #080a10;
-        color: #f5f7fa;
+#MainMenu {
+    visibility: hidden;
+}
+
+footer {
+    visibility: hidden;
+}
+
+.hero {
+    padding: 10px 0 25px 0;
+    text-align: center;
+}
+
+.hero-title {
+    font-size: 46px;
+    font-weight: 900;
+    letter-spacing: -1.5px;
+
+    background: linear-gradient(
+        90deg,
+        #8b5cf6,
+        #06b6d4,
+        #8b5cf6
+    );
+
+    background-size: 200% auto;
+
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    animation: gradient 5s linear infinite;
+}
+
+@keyframes gradient {
+    to {
+        background-position: 200% center;
     }
+}
 
-    .main {
-        background: transparent;
-    }
+.hero-subtitle {
+    margin-top: 7px;
+    color: #8992a3;
+    font-size: 15px;
+}
 
-    #MainMenu {
-        visibility: hidden;
-    }
+.glass-card {
+    background: rgba(19, 23, 34, 0.78);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.28);
+}
 
-    footer {
-        visibility: hidden;
-    }
-
-    header {
-        background: transparent !important;
-    }
-
-
-    /* ---------- TITLE ---------- */
-
-    .hero {
-        padding: 12px 0 25px 0;
-        text-align: center;
-    }
-
-    .hero-title {
-        font-size: 46px;
-        font-weight: 900;
-        letter-spacing: -1.5px;
-
-        background: linear-gradient(
-            90deg,
-            #8b5cf6,
-            #06b6d4,
-            #8b5cf6
+.result-card {
+    background:
+        linear-gradient(
+            145deg,
+            rgba(124,77,255,0.14),
+            rgba(6,182,212,0.07)
         );
 
-        background-size: 200% auto;
+    border: 1px solid rgba(124,77,255,0.35);
+    border-radius: 20px;
+    padding: 28px 18px;
+    text-align: center;
+    min-height: 220px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    box-shadow: 0 15px 45px rgba(0,0,0,0.30);
+}
 
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+.result-icon {
+    font-size: 64px;
+    line-height: 1;
+    margin-bottom: 15px;
+}
 
-        animation: gradient 5s linear infinite;
-    }
+.result-name {
+    font-size: 26px;
+    font-weight: 800;
+}
 
-    @keyframes gradient {
-        to {
-            background-position: 200% center;
-        }
-    }
+.result-confidence {
+    color: #8b95a7;
+    margin-top: 8px;
+    font-size: 14px;
+}
+
+.metric-card {
+    background: rgba(19, 23, 34, 0.78);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 15px;
+    padding: 15px;
+    text-align: center;
+}
+
+.metric-number {
+    font-size: 24px;
+    font-weight: 800;
+    color: #8b5cf6;
+}
+
+.metric-label {
+    color: #778196;
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+.gesture-item {
+    display: flex;
+    align-items: center;
+
+    background: rgba(14, 17, 25, 0.8);
+
+    border-radius: 11px;
+    padding: 10px 12px;
+    margin-bottom: 7px;
+
+    border: 1px solid rgba(255,255,255,0.045);
+}
+
+.gesture-icon {
+    font-size: 21px;
+    margin-right: 10px;
+}
+
+.gesture-name {
+    color: #e7eaf0;
+    font-size: 13px;
+}
+
+.status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 7px 12px;
+
+    border-radius: 50px;
+
+    background: rgba(34,197,94,0.10);
+
+    border: 1px solid rgba(34,197,94,0.25);
+
+    color: #4ade80;
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: #4ade80;
+
+    box-shadow: 0 0 10px #4ade80;
+}
 
-    .hero-subtitle {
-        margin-top: 7px;
-        color: #8992a3;
-        font-size: 15px;
-    }
+.history-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
+    padding: 9px 4px;
 
-    /* ---------- CARDS ---------- */
+    border-bottom: 1px solid rgba(255,255,255,0.05);
 
-    .glass-card {
-        background: rgba(19, 23, 34, 0.78);
-        border: 1px solid rgba(255,255,255,0.07);
-        border-radius: 18px;
-        padding: 20px;
+    font-size: 13px;
+}
 
-        box-shadow:
-            0 15px 40px rgba(0,0,0,0.28),
-            inset 0 1px 0 rgba(255,255,255,0.03);
+.history-time {
+    color: #667085;
+    font-size: 11px;
+}
 
-        backdrop-filter: blur(14px);
-    }
+section[data-testid="stSidebar"] {
+    background: #0b0e15;
+    border-right: 1px solid rgba(255,255,255,0.05);
+}
 
+.stButton > button {
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: #151925;
+    color: #e8ebf0;
+}
 
-    /* ---------- RESULT ---------- */
+.stButton > button:hover {
+    border-color: #7c4dff;
+    color: white;
+}
 
-    .result-card {
-        background:
-            linear-gradient(
-                145deg,
-                rgba(124,77,255,0.14),
-                rgba(6,182,212,0.07)
-            );
-
-        border: 1px solid rgba(124,77,255,0.35);
-
-        border-radius: 20px;
-
-        padding: 28px 18px;
-
-        text-align: center;
-
-        min-height: 220px;
-
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-
-        box-shadow:
-            0 15px 45px rgba(0,0,0,0.30);
-    }
-
-    .result-icon {
-        font-size: 64px;
-        line-height: 1;
-        margin-bottom: 15px;
-    }
-
-    .result-name {
-        font-size: 26px;
-        font-weight: 800;
-    }
-
-    .result-confidence {
-        color: #8b95a7;
-        margin-top: 8px;
-        font-size: 14px;
-    }
-
-
-    /* ---------- METRICS ---------- */
-
-    .metric-card {
-        background: rgba(19, 23, 34, 0.78);
-        border: 1px solid rgba(255,255,255,0.06);
-        border-radius: 15px;
-        padding: 15px;
-        text-align: center;
-    }
-
-    .metric-number {
-        font-size: 24px;
-        font-weight: 800;
-        color: #8b5cf6;
-    }
-
-    .metric-label {
-        color: #778196;
-        font-size: 12px;
-        margin-top: 3px;
-    }
-
-
-    /* ---------- GESTURE ITEMS ---------- */
-
-    .gesture-item {
-        display: flex;
-        align-items: center;
-
-        background: rgba(14, 17, 25, 0.8);
-
-        border-radius: 11px;
-
-        padding: 10px 12px;
-
-        margin-bottom: 7px;
-
-        border: 1px solid rgba(255,255,255,0.045);
-    }
-
-    .gesture-icon {
-        font-size: 21px;
-        margin-right: 10px;
-    }
-
-    .gesture-name {
-        color: #e7eaf0;
-        font-size: 13px;
-    }
-
-
-    /* ---------- STATUS ---------- */
-
-    .status {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-
-        padding: 7px 12px;
-
-        border-radius: 50px;
-
-        background: rgba(34,197,94,0.10);
-
-        border: 1px solid rgba(34,197,94,0.25);
-
-        color: #4ade80;
-
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .status-dot {
-        width: 7px;
-        height: 7px;
-
-        border-radius: 50%;
-
-        background: #4ade80;
-
-        box-shadow: 0 0 10px #4ade80;
-    }
-
-
-    /* ---------- HISTORY ---------- */
-
-    .history-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-
-        padding: 9px 4px;
-
-        border-bottom: 1px solid rgba(255,255,255,0.05);
-
-        font-size: 13px;
-    }
-
-    .history-time {
-        color: #667085;
-        font-size: 11px;
-    }
-
-
-    /* ---------- SIDEBAR ---------- */
-
-    section[data-testid="stSidebar"] {
-        background: #0b0e15;
-        border-right: 1px solid rgba(255,255,255,0.05);
-    }
-
-    section[data-testid="stSidebar"] h2 {
-        color: #f5f7fa;
-    }
-
-
-    /* ---------- BUTTON ---------- */
-
-    .stButton > button {
-        border-radius: 10px;
-        border: 1px solid rgba(255,255,255,0.08);
-        background: #151925;
-        color: #e8ebf0;
-    }
-
-    .stButton > button:hover {
-        border-color: #7c4dff;
-        color: #ffffff;
-    }
-
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+</style>
+""", unsafe_allow_html=True)
 
 
 # ============================================================
-# CONSTANTS
+# GESTURE MAP
 # ============================================================
 
 CONTROL_MAP = {
@@ -327,20 +271,30 @@ CONTROL_MAP = {
 }
 
 
-RTC_CONFIGURATION = RTCConfiguration(
-    {
-        "iceServers": [
-            {
-                "urls": ["stun:stun.l.google.com:19302"]
-            }
-        ]
-    }
-)
+# ============================================================
+# WEBRTC CONFIG
+# ============================================================
 
+RTC_CONFIGURATION = RTCConfiguration({
+    "iceServers": [
+        {
+            "urls": [
+                "stun:stun.l.google.com:19302"
+            ]
+        }
+    ]
+})
+
+
+# ============================================================
+# MODEL PATH
+# ============================================================
 
 MODEL_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "model.p",
+    os.path.dirname(
+        os.path.abspath(__file__)
+    ),
+    "model.p"
 )
 
 
@@ -354,7 +308,7 @@ mp_styles = mp.solutions.drawing_styles
 
 
 # ============================================================
-# MODEL LOADER
+# LOAD MODEL
 # ============================================================
 
 @st.cache_resource
@@ -365,41 +319,44 @@ def load_model():
 
     try:
 
-        with open(MODEL_PATH, "rb") as file:
+        with open(
+            MODEL_PATH,
+            "rb"
+        ) as file:
+
             data = pickle.load(file)
 
-        # Your original model.p structure:
-        # {"model": trained_model}
-
-        if isinstance(data, dict) and "model" in data:
+        if (
+            isinstance(data, dict)
+            and "model" in data
+        ):
             return data["model"]
 
-        # Also support directly saved models
         return data
 
     except Exception as error:
 
         st.error(
-            f"Could not load model.p: {error}"
+            f"Error loading model.p: {error}"
         )
 
         return None
 
 
 # ============================================================
-# LANDMARK NORMALIZATION
+# NORMALIZE LANDMARKS
 # ============================================================
 
 def normalize_landmarks(hand_landmarks):
 
     x_values = [
-        landmark.x
-        for landmark in hand_landmarks.landmark
+        lm.x
+        for lm in hand_landmarks.landmark
     ]
 
     y_values = [
-        landmark.y
-        for landmark in hand_landmarks.landmark
+        lm.y
+        for lm in hand_landmarks.landmark
     ]
 
     min_x = min(x_values)
@@ -407,32 +364,46 @@ def normalize_landmarks(hand_landmarks):
 
     data = []
 
-    for landmark in hand_landmarks.landmark:
+    for lm in hand_landmarks.landmark:
 
         data.append(
-            landmark.x - min_x
+            lm.x - min_x
         )
 
         data.append(
-            landmark.y - min_y
+            lm.y - min_y
         )
 
-    return np.asarray(data, dtype=np.float32)
+    return np.asarray(
+        data,
+        dtype=np.float32
+    )
 
 
 # ============================================================
-# COLOR CONVERSION
+# HEX → BGR
 # ============================================================
 
 def hex_to_bgr(hex_color):
 
     hex_color = hex_color.lstrip("#")
 
-    r = int(hex_color[0:2], 16)
-    g = int(hex_color[2:4], 16)
-    b = int(hex_color[4:6], 16)
+    r = int(
+        hex_color[0:2],
+        16
+    )
 
-    return b, g, r
+    g = int(
+        hex_color[2:4],
+        16
+    )
+
+    b = int(
+        hex_color[4:6],
+        16
+    )
+
+    return (b, g, r)
 
 
 # ============================================================
@@ -456,20 +427,24 @@ class GestureProcessor(VideoProcessorBase):
         self.current_icon = "🖐️"
         self.current_color = "#8b5cf6"
         self.confidence = 0.0
-
         self.frame_count = 0
 
         self.lock = threading.Lock()
 
 
-    def recv(self, frame: av.VideoFrame):
+    def recv(
+        self,
+        frame: av.VideoFrame
+    ):
 
         image = frame.to_ndarray(
             format="bgr24"
         )
 
-        # Mirror webcam
-        image = cv2.flip(image, 1)
+        image = cv2.flip(
+            image,
+            1
+        )
 
         height, width, _ = image.shape
 
@@ -478,7 +453,9 @@ class GestureProcessor(VideoProcessorBase):
             cv2.COLOR_BGR2RGB
         )
 
-        results = self.hands.process(rgb)
+        results = self.hands.process(
+            rgb
+        )
 
         self.frame_count += 1
 
@@ -488,188 +465,198 @@ class GestureProcessor(VideoProcessorBase):
         confidence = 0.0
 
 
-        # ----------------------------------------------------
+        # ====================================================
         # HAND DETECTED
-        # ----------------------------------------------------
+        # ====================================================
 
         if (
             results.multi_hand_landmarks
             and self.model is not None
         ):
 
-            for hand_landmarks in results.multi_hand_landmarks:
+            hand_landmarks = (
+                results.multi_hand_landmarks[0]
+            )
 
-                # Draw MediaPipe skeleton
-                mp_drawing.draw_landmarks(
-                    image,
-                    hand_landmarks,
-                    mp_hands.HAND_CONNECTIONS,
-                    mp_styles.get_default_hand_landmarks_style(),
-                    mp_styles.get_default_hand_connections_style(),
+
+            # Draw landmarks
+            mp_drawing.draw_landmarks(
+                image,
+                hand_landmarks,
+                mp_hands.HAND_CONNECTIONS,
+                mp_styles.get_default_hand_landmarks_style(),
+                mp_styles.get_default_hand_connections_style(),
+            )
+
+
+            # Normalize
+            features = normalize_landmarks(
+                hand_landmarks
+            )
+
+
+            # Predict
+            try:
+
+                prediction = self.model.predict(
+                    [features]
+                )[0]
+
+                class_id = int(
+                    prediction
                 )
 
 
-                # Normalize landmarks
-                features = normalize_landmarks(
-                    hand_landmarks
-                )
+                if hasattr(
+                    self.model,
+                    "predict_proba"
+                ):
+
+                    probabilities = (
+                        self.model.predict_proba(
+                            [features]
+                        )[0]
+                    )
+
+                    confidence = (
+                        float(
+                            np.max(
+                                probabilities
+                            )
+                        ) * 100
+                    )
+
+                else:
+
+                    confidence = 100.0
 
 
-                # Prediction
-                try:
-
-                    prediction = self.model.predict(
-                        [features]
-                    )[0]
-
-                    class_id = int(prediction)
-
-                    # Confidence
-                    if hasattr(
-                        self.model,
-                        "predict_proba"
-                    ):
-
-                        probabilities = (
-                            self.model.predict_proba(
-                                [features]
-                            )[0]
-                        )
-
-                        confidence = (
-                            float(np.max(probabilities))
-                            * 100
-                        )
-
-                    else:
-
-                        confidence = 100.0
-
-
-                    gesture, icon, color = CONTROL_MAP.get(
+                gesture, icon, color = (
+                    CONTROL_MAP.get(
                         class_id,
                         (
                             "Unknown",
                             "❓",
-                            "#94a3b8",
+                            "#94a3b8"
                         )
                     )
-
-
-                except Exception:
-
-                    gesture = "Prediction Error"
-                    icon = "⚠️"
-                    color = "#ef4444"
-                    confidence = 0.0
-
-
-                # ------------------------------------------------
-                # BOUNDING BOX
-                # ------------------------------------------------
-
-                xs = [
-                    landmark.x
-                    for landmark in hand_landmarks.landmark
-                ]
-
-                ys = [
-                    landmark.y
-                    for landmark in hand_landmarks.landmark
-                ]
-
-                x1 = max(
-                    int(min(xs) * width) - 15,
-                    0
-                )
-
-                y1 = max(
-                    int(min(ys) * height) - 15,
-                    0
-                )
-
-                x2 = min(
-                    int(max(xs) * width) + 15,
-                    width - 1
-                )
-
-                y2 = min(
-                    int(max(ys) * height) + 15,
-                    height - 1
                 )
 
 
-                bgr = hex_to_bgr(color)
+            except Exception:
+
+                gesture = "Prediction Error"
+                icon = "⚠️"
+                color = "#ef4444"
+                confidence = 0.0
 
 
-                cv2.rectangle(
-                    image,
-                    (x1, y1),
-                    (x2, y2),
-                    bgr,
-                    2,
-                )
+            # =================================================
+            # BOUNDING BOX
+            # =================================================
+
+            xs = [
+                lm.x
+                for lm in hand_landmarks.landmark
+            ]
+
+            ys = [
+                lm.y
+                for lm in hand_landmarks.landmark
+            ]
 
 
-                # Label background
-                label = (
-                    f"{gesture} "
-                    f"{confidence:.0f}%"
-                )
+            x1 = max(
+                int(min(xs) * width) - 15,
+                0
+            )
 
+            y1 = max(
+                int(min(ys) * height) - 15,
+                0
+            )
+
+            x2 = min(
+                int(max(xs) * width) + 15,
+                width - 1
+            )
+
+            y2 = min(
+                int(max(ys) * height) + 15,
+                height - 1
+            )
+
+
+            bgr = hex_to_bgr(
+                color
+            )
+
+
+            cv2.rectangle(
+                image,
+                (x1, y1),
+                (x2, y2),
+                bgr,
+                2
+            )
+
+
+            label = (
+                f"{gesture} "
+                f"{confidence:.0f}%"
+            )
+
+
+            (
+                text_width,
+                text_height
+            ), _ = cv2.getTextSize(
+                label,
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.65,
+                2
+            )
+
+
+            label_y = max(
+                y1 - text_height - 12,
+                0
+            )
+
+
+            cv2.rectangle(
+                image,
                 (
-                    text_width,
-                    text_height
-                ), _ = cv2.getTextSize(
-                    label,
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.65,
-                    2,
-                )
+                    x1,
+                    label_y
+                ),
+                (
+                    x1 + text_width + 12,
+                    y1
+                ),
+                bgr,
+                -1
+            )
 
 
-                label_y = max(
-                    y1 - text_height - 12,
-                    0
-                )
+            cv2.putText(
+                image,
+                label,
+                (
+                    x1 + 6,
+                    y1 - 7
+                ),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.65,
+                (255, 255, 255),
+                2,
+                cv2.LINE_AA
+            )
 
 
-                cv2.rectangle(
-                    image,
-                    (
-                        x1,
-                        label_y
-                    ),
-                    (
-                        x1 + text_width + 12,
-                        y1
-                    ),
-                    bgr,
-                    -1,
-                )
-
-
-                cv2.putText(
-                    image,
-                    label,
-                    (
-                        x1 + 6,
-                        y1 - 7
-                    ),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.65,
-                    (255, 255, 255),
-                    2,
-                    cv2.LINE_AA,
-                )
-
-
-                break
-
-
-        # ----------------------------------------------------
+        # ====================================================
         # NO HAND
-        # ----------------------------------------------------
+        # ====================================================
 
         else:
 
@@ -681,13 +668,13 @@ class GestureProcessor(VideoProcessorBase):
                 0.8,
                 (150, 150, 150),
                 2,
-                cv2.LINE_AA,
+                cv2.LINE_AA
             )
 
 
-        # ----------------------------------------------------
-        # UPDATE SHARED STATE
-        # ----------------------------------------------------
+        # ====================================================
+        # SHARED STATE
+        # ====================================================
 
         with self.lock:
 
@@ -697,19 +684,22 @@ class GestureProcessor(VideoProcessorBase):
             self.confidence = confidence
 
 
-        # ----------------------------------------------------
-        # FRAME INFORMATION
-        # ----------------------------------------------------
+        # ====================================================
+        # FRAME NUMBER
+        # ====================================================
 
         cv2.putText(
             image,
-            f"FRAME  {self.frame_count}",
-            (20, height - 25),
+            f"FRAME {self.frame_count}",
+            (
+                20,
+                height - 25
+            ),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.55,
             (180, 180, 180),
             1,
-            cv2.LINE_AA,
+            cv2.LINE_AA
         )
 
 
@@ -726,13 +716,15 @@ class GestureProcessor(VideoProcessorBase):
 if "history" not in st.session_state:
     st.session_state.history = []
 
-
 if "last_gesture" not in st.session_state:
     st.session_state.last_gesture = "None"
 
 
-if "start_time" not in st.session_state:
-    st.session_state.start_time = time.time()
+# ============================================================
+# LOAD MODEL
+# ============================================================
+
+model = load_model()
 
 
 # ============================================================
@@ -752,35 +744,32 @@ with st.sidebar:
     st.divider()
 
 
-    # --------------------------------------------------------
-    # MODEL STATUS
-    # --------------------------------------------------------
-
+    # MODEL
     st.markdown(
         "### 🤖 Model"
     )
-
-    model = load_model()
 
 
     if model is not None:
 
         st.success(
-            "Model loaded"
+            "✅ Model loaded"
         )
 
     else:
 
         st.error(
-            "model.p not found"
+            "❌ model.p not found"
         )
+
 
         uploaded_model = st.file_uploader(
             "Upload model.p",
-            type=["p"],
+            type=["p"]
         )
 
-        if uploaded_model is not None:
+
+        if uploaded_model:
 
             with open(
                 MODEL_PATH,
@@ -791,8 +780,9 @@ with st.sidebar:
                     uploaded_model.getbuffer()
                 )
 
+
             st.success(
-                "Model uploaded. Refreshing..."
+                "Model uploaded!"
             )
 
             st.cache_resource.clear()
@@ -803,60 +793,62 @@ with st.sidebar:
     st.divider()
 
 
-    # --------------------------------------------------------
     # GESTURE MAP
-    # --------------------------------------------------------
-
     st.markdown(
         "### 🎯 Gesture Map"
     )
 
 
-    for class_id, (
-        name,
-        icon,
-        color
+    for (
+        class_id,
+        (
+            name,
+            icon,
+            color
+        )
     ) in CONTROL_MAP.items():
 
         st.markdown(
             f"""
             <div class="gesture-item">
+
                 <span class="gesture-icon">
                     {icon}
                 </span>
 
                 <span class="gesture-name">
+
                     <b style="color:{color}">
                         {class_id}
                     </b>
+
                     &nbsp; {name}
+
                 </span>
+
             </div>
             """,
-            unsafe_allow_html=True,
+            unsafe_allow_html=True
         )
 
 
     st.divider()
 
 
-    # --------------------------------------------------------
-    # CLEAR HISTORY
-    # --------------------------------------------------------
-
     if st.button(
         "🗑️ Clear History",
-        use_container_width=True,
+        use_container_width=True
     ):
 
         st.session_state.history = []
+
         st.session_state.last_gesture = "None"
 
         st.rerun()
 
 
 # ============================================================
-# HERO
+# HEADER
 # ============================================================
 
 st.markdown(
@@ -868,18 +860,18 @@ st.markdown(
         </div>
 
         <div class="hero-subtitle">
-            Real-time hand gesture recognition powered by
-            MediaPipe + Machine Learning
+            Real-time hand gesture recognition
+            powered by MediaPipe + Machine Learning
         </div>
 
     </div>
     """,
-    unsafe_allow_html=True,
+    unsafe_allow_html=True
 )
 
 
 # ============================================================
-# TOP STATUS
+# STATUS
 # ============================================================
 
 if model is not None:
@@ -887,17 +879,20 @@ if model is not None:
     st.markdown(
         """
         <div class="status">
+
             <span class="status-dot"></span>
+
             AI MODEL READY
+
         </div>
         """,
-        unsafe_allow_html=True,
+        unsafe_allow_html=True
     )
 
 else:
 
     st.warning(
-        "Upload model.p from the sidebar before starting the camera."
+        "Upload model.p from the sidebar before starting."
     )
 
 
@@ -905,12 +900,12 @@ st.write("")
 
 
 # ============================================================
-# MAIN COLUMNS
+# MAIN LAYOUT
 # ============================================================
 
 camera_column, dashboard_column = st.columns(
     [2.2, 1],
-    gap="large",
+    gap="large"
 )
 
 
@@ -925,14 +920,14 @@ with camera_column:
     )
 
     st.caption(
-        "Allow camera access in your browser, then start the stream."
+        "Allow camera access in your browser."
     )
 
 
     if model is None:
 
         st.info(
-            "Your trained model is required to start recognition."
+            "Upload model.p to start recognition."
         )
 
         ctx = None
@@ -941,18 +936,22 @@ with camera_column:
 
         ctx = webrtc_streamer(
             key="gesture-ai",
+
             video_processor_factory=GestureProcessor,
+
             rtc_configuration=RTC_CONFIGURATION,
+
             media_stream_constraints={
                 "video": True,
-                "audio": False,
+                "audio": False
             },
-            async_processing=True,
+
+            async_processing=True
         )
 
 
 # ============================================================
-# DASHBOARD PLACEHOLDERS
+# DASHBOARD
 # ============================================================
 
 with dashboard_column:
@@ -965,15 +964,16 @@ with dashboard_column:
 
     st.write("")
 
-    metric_col1, metric_col2 = st.columns(2)
+    col1, col2 = st.columns(2)
 
-    with metric_col1:
+    with col1:
 
         confidence_placeholder = st.empty()
 
-    with metric_col2:
+    with col2:
 
         frame_placeholder = st.empty()
+
 
     st.write("")
 
@@ -986,11 +986,6 @@ with dashboard_column:
 
 # ============================================================
 # LIVE DASHBOARD
-#
-# IMPORTANT:
-# No while True here.
-#
-# Streamlit fragment periodically reruns this section.
 # ============================================================
 
 if ctx is not None:
@@ -1001,9 +996,9 @@ if ctx is not None:
         processor = ctx.video_processor
 
 
-        # ----------------------------------------------------
+        # ====================================================
         # CAMERA NOT STARTED
-        # ----------------------------------------------------
+        # ====================================================
 
         if processor is None:
 
@@ -1020,12 +1015,12 @@ if ctx is not None:
                     </div>
 
                     <div class="result-confidence">
-                        Start the camera to begin recognition
+                        Start the camera to begin
                     </div>
 
                 </div>
                 """,
-                unsafe_allow_html=True,
+                unsafe_allow_html=True
             )
 
             confidence_placeholder.markdown(
@@ -1042,7 +1037,7 @@ if ctx is not None:
 
                 </div>
                 """,
-                unsafe_allow_html=True,
+                unsafe_allow_html=True
             )
 
             frame_placeholder.markdown(
@@ -1059,7 +1054,7 @@ if ctx is not None:
 
                 </div>
                 """,
-                unsafe_allow_html=True,
+                unsafe_allow_html=True
             )
 
             history_placeholder.markdown(
@@ -1076,33 +1071,39 @@ if ctx is not None:
 
                 </div>
                 """,
-                unsafe_allow_html=True,
+                unsafe_allow_html=True
             )
 
             return
 
 
-        # ----------------------------------------------------
-        # READ PROCESSOR STATE
-        # ----------------------------------------------------
+        # ====================================================
+        # GET STATE
+        # ====================================================
 
         with processor.lock:
 
             gesture = processor.current_gesture
+
             icon = processor.current_icon
+
             color = processor.current_color
+
             confidence = processor.confidence
+
             frames = processor.frame_count
 
 
-        # ----------------------------------------------------
-        # RESULT
-        # ----------------------------------------------------
+        # ====================================================
+        # RESULT CARD
+        # ====================================================
 
         result_placeholder.markdown(
             f"""
-            <div class="result-card"
-                 style="border-color:{color}55;">
+            <div
+                class="result-card"
+                style="border-color:{color}55;"
+            >
 
                 <div class="result-icon">
                     {icon}
@@ -1124,13 +1125,13 @@ if ctx is not None:
 
             </div>
             """,
-            unsafe_allow_html=True,
+            unsafe_allow_html=True
         )
 
 
-        # ----------------------------------------------------
+        # ====================================================
         # CONFIDENCE
-        # ----------------------------------------------------
+        # ====================================================
 
         confidence_placeholder.markdown(
             f"""
@@ -1149,13 +1150,13 @@ if ctx is not None:
 
             </div>
             """,
-            unsafe_allow_html=True,
+            unsafe_allow_html=True
         )
 
 
-        # ----------------------------------------------------
-        # FRAMES
-        # ----------------------------------------------------
+        # ====================================================
+        # FRAME COUNT
+        # ====================================================
 
         frame_placeholder.markdown(
             f"""
@@ -1171,20 +1172,19 @@ if ctx is not None:
 
             </div>
             """,
-            unsafe_allow_html=True,
+            unsafe_allow_html=True
         )
 
 
-        # ----------------------------------------------------
+        # ====================================================
         # HISTORY
-        # ----------------------------------------------------
+        # ====================================================
 
         if (
             gesture != "None"
             and gesture != "Prediction Error"
         ):
 
-            # Add only when gesture changes
             if (
                 gesture
                 != st.session_state.last_gesture
@@ -1197,14 +1197,13 @@ if ctx is not None:
                         "confidence": confidence,
                         "time": time.strftime(
                             "%H:%M:%S"
-                        ),
+                        )
                     }
                 )
 
                 st.session_state.last_gesture = gesture
 
 
-                # Keep last 10
                 if len(
                     st.session_state.history
                 ) > 10:
@@ -1214,9 +1213,9 @@ if ctx is not None:
                     )
 
 
-        # ----------------------------------------------------
-        # HISTORY HTML
-        # ----------------------------------------------------
+        # ====================================================
+        # HISTORY UI
+        # ====================================================
 
         if not st.session_state.history:
 
@@ -1253,11 +1252,14 @@ if ctx is not None:
                     (
                         mapped_name,
                         _,
-                        mapped_color,
-                    ),
+                        mapped_color
+                    )
                 ) in CONTROL_MAP.items():
 
-                    if mapped_name == entry["name"]:
+                    if (
+                        mapped_name
+                        == entry["name"]
+                    ):
 
                         entry_color = mapped_color
 
@@ -1268,19 +1270,26 @@ if ctx is not None:
                 <div class="history-row">
 
                     <span>
+
                         {entry["icon"]}
+
                         <span style="
                             color:{entry_color};
                             font-weight:600;
                         ">
                             {entry["name"]}
                         </span>
+
                     </span>
 
                     <span class="history-time">
+
                         {entry["confidence"]:.0f}%
+
                         ·
+
                         {entry["time"]}
+
                     </span>
 
                 </div>
@@ -1292,7 +1301,7 @@ if ctx is not None:
 
         history_placeholder.markdown(
             history_html,
-            unsafe_allow_html=True,
+            unsafe_allow_html=True
         )
 
 
@@ -1305,21 +1314,23 @@ if ctx is not None:
 
 st.markdown(
     """
-    <br>
-
     <div style="
         text-align:center;
         color:#4b5563;
         font-size:11px;
-        padding:20px;
+        padding:30px;
     ">
 
-        Gesture AI · MediaPipe · Machine Learning · Streamlit
+        Gesture AI
+        ·
+        MediaPipe
+        ·
+        Machine Learning
+        ·
+        Streamlit
 
     </div>
     """,
-    unsafe_allow_html=True,
+    unsafe_allow_html=True
 )
 ```
-
-
