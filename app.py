@@ -1322,47 +1322,4 @@ st.markdown(
 )
 ```
 
-### Your `requirements.txt`
-
-Use this exact file:
-
-```text
-streamlit
-opencv-python-headless
-mediapipe
-numpy
-scikit-learn
-streamlit-webrtc
-av
-```
-
-### Repository structure
-
-```text
-hand-gesture-smart-control-using-mediapipe-machine-learning/
-│
-├── app.py
-├── model.p
-├── requirements.txt
-└── README.md
-```
-
-### One important change from your original project
-
-Your original app had:
-
-```python
-while True:
-    ...
-    time.sleep(0.1)
-```
-
-I removed that completely.
-
-Instead, the dashboard uses Streamlit's periodic fragment:
-
-```python
-@st.fragment(run_every=0.2)
-def live_dashboard():
-```
 
