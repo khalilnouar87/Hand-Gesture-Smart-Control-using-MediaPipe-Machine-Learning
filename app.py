@@ -1,11 +1,20 @@
-
 import os
 import time
 import pickle
 import threading
 
+# --- Safe import for OpenCV ---
+try:
+    import cv2
+except ImportError:
+    # If OpenCV is missing, we cannot proceed; show error via Streamlit if available
+    # but Streamlit is imported later; we'll handle it after importing st.
+    # We'll set a flag and check after streamlit import.
+    CV2_AVAILABLE = False
+else:
+    CV2_AVAILABLE = True
+
 import av
-import cv2
 import mediapipe as mp
 import numpy as np
 import streamlit as st
@@ -15,6 +24,16 @@ from streamlit_webrtc import (
     VideoProcessorBase,
     RTCConfiguration,
 )
+
+# --- If OpenCV is missing, stop and show error ---
+if not CV2_AVAILABLE:
+    st.error(
+        "❌ **OpenCV (cv2) is not installed.**\n\n"
+        "Please install it using:\n\n"
+        "```bash\npip install opencv-python-headless\n```\n\n"
+        "Then restart the app."
+    )
+    st.stop()
 
 
 # ============================================================
@@ -1333,4 +1352,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
