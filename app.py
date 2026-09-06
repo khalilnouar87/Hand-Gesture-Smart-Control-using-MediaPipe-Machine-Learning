@@ -4,7 +4,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import pickle
-import pyautogui
+
 import time
 from PIL import Image
 import threading
