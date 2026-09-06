@@ -1366,8 +1366,3 @@ Instead, the dashboard uses Streamlit's periodic fragment:
 def live_dashboard():
 ```
 
-So the webcam processing continues independently through WebRTC, while the Streamlit dashboard refreshes approximately every **200 ms**.
-
-Also, I intentionally **didn't include `pyautogui`**. On your local Windows machine, `pyautogui` can control that machine, but when the app is deployed to Streamlit Cloud, Python is executing on Streamlit's server—not on the visitor's PC. Adding `pyautogui` would therefore not give your web app control of the user's mouse.
-
-If your objective is specifically **gesture → mouse movement / clicks / volume / screenshot on the user's PC**, the next version should use **browser JavaScript/Web APIs or a small local companion app**, while keeping this Streamlit interface as the dashboard.
